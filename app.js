@@ -129,6 +129,43 @@ router.route('/process/login').post(function(req, res) {
 
 });
 
+// 사용자 추가 라우팅 함수 - 클라이언트에서 보내오는 데이터를 이용해 데이터베이스에 추가
+router.route('/process/adduser').post(function(req, res) {
+    console.log('/process/adduser 호출됨.');
+
+    var paramId = req.body.id || req.query.id;
+    var paramPassword = req.body.password || req.query.password;
+    var paramName = req.body.name || req.query.name;
+
+    console.log('요청 파라미터 : ' + paramId + ', ' + paramPassword + ', ' + paramName);
+
+    // 데이터베이스 객체가 초기화된 경우, addUser 함수 호출하여 사용자 추가
+    if (database) {
+        addUser(database, paramId, paramPassword, paramName, function(err, result) {
+            if (err) {throw err;}
+
+            // 결과 객체 확인하여 추가된 데이터 있으면 성공 응답 전송
+            if (result && result.insertedCount > 0) {
+                console.dir(result);
+
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 추가 성공</h2>');
+                res.end();
+            } else {  // 결과 객체가 없으면 실패 응답 전송
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 추가  실패</h2>');
+                res.end();
+            }
+        });
+    } else {  // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
+        res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+        res.write('<h2>데이터베이스 연결 실패</h2>');
+        res.end();
+    }
+
+});
+
+
 // 라우터 객체 등록
 app.use('/', router);
 
@@ -157,6 +194,31 @@ var authUser = function(database, id, password, callback) {
     });
 }
 
+//사용자를 추가하는 함수
+var addUser = function(database, id, password, name, callback) {
+    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
+
+    // users 컬렉션 참조
+    var users = database.collection('users');
+
+    // id, password, username을 이용해 사용자 추가
+    users.insertMany([{"id":id, "password":password, "name":name}], function(err, result) {
+        if (err) {  // 에러 발생 시 콜백 함수를 호출하면서 에러 객체 전달
+            callback(err, null);
+            return;
+        }
+
+        // 에러 아닌 경우, 콜백 함수를 호출하면서 결과 객체 전달
+        if (result.insertedCount > 0) {
+            console.log("사용자 레코드 추가됨 : " + result.insertedCount);
+        } else {
+            console.log("추가된 레코드가 없음.");
+        }
+
+        callback(null, result);
+
+    });
+}
 
 // 404 에러 페이지 처리
 var errorHandler = expressErrorHandler({
@@ -168,6 +230,21 @@ var errorHandler = expressErrorHandler({
 app.use( expressErrorHandler.httpError(404) );
 app.use( errorHandler );
 
+
+//===== 서버 시작 =====//
+
+// 프로세스 종료 시에 데이터베이스 연결 해제
+process.on('SIGTERM', function () {
+    console.log("프로세스가 종료됩니다.");
+    app.close();
+});
+
+app.on('close', function () {
+    console.log("Express 서버 객체가 종료됩니다.");
+    if (database) {
+        database.close();
+    }
+});
 
 // Express 서버 시작
 http.createServer(app).listen(app.get('port'), function(){
