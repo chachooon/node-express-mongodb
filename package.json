@@ -1,14 +1,8 @@
 {
-  "name": "node-mongodb",
+  "name": "node-server-study",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "main": "app_mysql.js",
   "dependencies": {
     "body-parser": "^1.18.2",
     "cookie-parser": "^1.4.3",
@@ -17,10 +11,26 @@
     "express": "^4.16.2",
     "express-error-handler": "^1.1.0",
     "express-session": "^1.15.6",
-    "http": "0.0.0",
+    "http": "^0.0.0",
     "mongodb": "^2.2.33",
     "mongoose": "^4.13.2",
+    "mysql": "^2.15.0",
     "path": "^0.12.7",
     "serve-static": "^1.13.1"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chachooon/node-express-mongodb.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chachooon/node-express-mongodb/issues"
+  },
+  "homepage": "https://github.com/chachooon/node-express-mongodb#readme"
 }
