@@ -203,51 +203,46 @@ app.use('/', router);
 var authUser = function(database, id, password, callback) {
     console.log('authUser 호출됨 : ' + id + ', ' + password);
 
-    // users 컬렉션 참조
-    var users = database.collection('users');
-
     // 아이디와 비밀번호를 이용해 검색
-    users.find({"id":id, "password":password}).toArray(function(err, docs) {
-        if (err) { // 에러 발생 시 콜백 함수를 호출하면서 에러 객체 전달
-            callback(err, null);
-            return;
-        }
-
-        if (docs.length > 0) {  // 조회한 레코드가 있는 경우 콜백 함수를 호출하면서 조회 결과 전달
-            console.log('아이디 [%s], 패스워드 [%s] 가 일치하는 사용자 찾음.', id, password);
-            callback(null, docs);
-        } else {  // 조회한 레코드가 없는 경우 콜백 함수를 호출하면서 null, null 전달
-            console.log("일치하는 사용자를 찾지 못함.");
-            callback(null, null);
-        }
-    });
-}
-
-//사용자를 추가하는 함수
-var addUser = function(database, id, password, name, callback) {
-    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
-
-    // users 컬렉션 참조
-    var users = database.collection('users');
-
-    // id, password, username을 이용해 사용자 추가
-    users.insertMany([{"id":id, "password":password, "name":name}], function(err, result) {
+    UserModel.find({"id":id, "password":password}, function(err, results) {
         if (err) {  // 에러 발생 시 콜백 함수를 호출하면서 에러 객체 전달
             callback(err, null);
             return;
         }
 
-        // 에러 아닌 경우, 콜백 함수를 호출하면서 결과 객체 전달
-        if (result.insertedCount > 0) {
-            console.log("사용자 레코드 추가됨 : " + result.insertedCount);
-        } else {
-            console.log("추가된 레코드가 없음.");
+        console.log('아이디 [%s], 패스워드 [%s]로 사용자 검색결과', id, password);
+        console.dir(results);
+
+        if (results.length > 0) {  // 조회한 레코드가 있는 경우 콜백 함수를 호출하면서 조회 결과 전달
+            console.log('아이디 [%s], 패스워드 [%s] 가 일치하는 사용자 찾음.', id, password);
+            callback(null, results);
+        } else {  // 조회한 레코드가 없는 경우 콜백 함수를 호출하면서 null, null 전달
+            console.log("일치하는 사용자를 찾지 못함.");
+            callback(null, null);
+        }
+    });
+};
+
+
+//사용자를 추가하는 함수
+var addUser = function(database, id, password, name, callback) {
+    console.log('addUser 호출됨 : ' + id + ', ' + password + ', ' + name);
+
+    // UserModel 인스턴스 생성
+    var user = new UserModel({"id":id, "password":password, "name":name});
+
+    // save()로 저장 : 저장 성공 시 addedUser 객체가 파라미터로 전달됨
+    user.save(function(err, addedUser) {
+        if (err) {
+            callback(err, null);
+            return;
         }
 
-        callback(null, result);
+        console.log("사용자 데이터 추가함.");
+        callback(null, addedUser);
 
     });
-}
+};
 
 // 404 에러 페이지 처리
 var errorHandler = expressErrorHandler({
