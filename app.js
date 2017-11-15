@@ -25,6 +25,9 @@ var expressErrorHandler = require('express-error-handler');
 // Session 미들웨어 불러오기
 var expressSession = require('express-session');
 
+// mongoose 모듈 사용
+var mongoose = require('mongoose');
+
 // 익스프레스 객체 생성
 var app = express();
 
@@ -54,12 +57,15 @@ app.use(expressSession({
 
 //===== 데이터베이스 연결 =====//
 
-// 몽고디비 모듈 사용
-var MongoClient = require('mongodb').MongoClient;
-
 
 // 데이터베이스 객체를 위한 변수 선언
 var database;
+
+// 데이터베이스 스키마 객체를 위한 변수 선언
+var UserSchema;
+
+// 데이터베이스 모델 객체를 위한 변수 선언
+var UserModel;
 
 //데이터베이스에 연결
 function connectDB() {
@@ -67,15 +73,38 @@ function connectDB() {
     var databaseUrl = 'mongodb://localhost:27017/local';
 
     // 데이터베이스 연결
-    MongoClient.connect(databaseUrl, function(err, db) {
-        if (err) throw err;
+    console.log('데이터베이스 연결을 시도합니다.');
+    mongoose.Promise = global.Promise;  // mongoose의 Promise 객체는 global의 Promise 객체 사용하도록 함
+    mongoose.connect(databaseUrl);
+    database = mongoose.connection;
 
+    database.on('error', console.error.bind(console, 'mongoose connection error.'));
+    database.on('open', function () {
         console.log('데이터베이스에 연결되었습니다. : ' + databaseUrl);
 
-        // database 변수에 할당
-        database = db;
+
+        // 스키마 정의
+        UserSchema = mongoose.Schema({
+            id: String,
+            name: String,
+            password: String
+        });
+        console.log('UserSchema 정의함.');
+
+        // UserModel 모델 정의
+        UserModel = mongoose.model("users", UserSchema);
+        console.log('UserModel 정의함.');
+
+    });
+
+    // 연결 끊어졌을 때 5초 후 재연결
+    database.on('disconnected', function() {
+        console.log('연결이 끊어졌습니다. 5초 후 재연결합니다.');
+        setInterval(connectDB, 5000);
     });
 }
+
+
 
 
 //===== 라우팅 함수 등록 =====//
