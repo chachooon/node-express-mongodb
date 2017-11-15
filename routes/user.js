@@ -219,7 +219,7 @@ var addUser = function(database, id, password, name, callback) {
     });
 }
 
-
+// module.exports.init = init;
 module.exports.login = login;
 module.exports.adduser = adduser;
 module.exports.listuser = listuser;
