@@ -28,6 +28,7 @@ var expressSession = require('express-session');
 // mongoose 모듈 사용
 var mongoose = require('mongoose');
 
+
 // 익스프레스 객체 생성
 var app = express();
 
@@ -55,8 +56,8 @@ app.use(expressSession({
 }));
 
 
-//===== 데이터베이스 연결 =====//
 
+//===== 데이터베이스 연결 =====//
 
 // 데이터베이스 객체를 위한 변수 선언
 var database;
@@ -85,15 +86,30 @@ function connectDB() {
 
         // 스키마 정의
         UserSchema = mongoose.Schema({
-            id: String,
-            name: String,
-            password: String
+            id: {type: String, required: true, unique: true},
+            password: {type: String, required: true},
+            name: {type: String, index: 'hashed'},
+            age: {type: Number, 'default': -1},
+            created_at: {type: Date, index: {unique: false}, 'default': Date.now},
+            updated_at: {type: Date, index: {unique: false}, 'default': Date.now}
         });
+
+        // 스키마에 static으로 findById 메소드 추가
+        UserSchema.static('findById', function(id, callback) {
+            return this.find({id:id}, callback);
+        });
+
+        // 스키마에 static으로 findAll 메소드 추가
+        UserSchema.static('findAll', function(callback) {
+            return this.find({}, callback);
+        });
+
         console.log('UserSchema 정의함.');
 
         // UserModel 모델 정의
-        UserModel = mongoose.model("users", UserSchema);
+        UserModel = mongoose.model("users2", UserSchema);
         console.log('UserModel 정의함.');
+
 
     });
 
@@ -103,7 +119,6 @@ function connectDB() {
         setInterval(connectDB, 5000);
     });
 }
-
 
 
 
@@ -125,7 +140,17 @@ router.route('/process/login').post(function(req, res) {
     // 데이터베이스 객체가 초기화된 경우, authUser 함수 호출하여 사용자 인증
     if (database) {
         authUser(database, paramId, paramPassword, function(err, docs) {
-            if (err) {throw err;}
+            // 에러 발생 시, 클라이언트로 에러 전송
+            if (err) {
+                console.error('로그인 중 에러 발생 : ' + err.stack);
+
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>로그인 중 에러 발생</h2>');
+                res.write('<p>' + err.stack + '</p>');
+                res.end();
+
+                return;
+            }
 
             // 조회된 레코드가 있으면 성공 응답 전송
             if (docs) {
@@ -158,6 +183,8 @@ router.route('/process/login').post(function(req, res) {
 
 });
 
+
+
 // 사용자 추가 라우팅 함수 - 클라이언트에서 보내오는 데이터를 이용해 데이터베이스에 추가
 router.route('/process/adduser').post(function(req, res) {
     console.log('/process/adduser 호출됨.');
@@ -170,12 +197,22 @@ router.route('/process/adduser').post(function(req, res) {
 
     // 데이터베이스 객체가 초기화된 경우, addUser 함수 호출하여 사용자 추가
     if (database) {
-        addUser(database, paramId, paramPassword, paramName, function(err, result) {
-            if (err) {throw err;}
+        addUser(database, paramId, paramPassword, paramName, function(err, addedUser) {
+            // 동일한 id로 추가하려는 경우 에러 발생 - 클라이언트로 에러 전송
+            if (err) {
+                console.error('사용자 추가 중 에러 발생 : ' + err.stack);
 
-            // 결과 객체 확인하여 추가된 데이터 있으면 성공 응답 전송
-            if (result && result.insertedCount > 0) {
-                console.dir(result);
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 추가 중 에러 발생</h2>');
+                res.write('<p>' + err.stack + '</p>');
+                res.end();
+
+                return;
+            }
+
+            // 결과 객체 있으면 성공 응답 전송
+            if (addedUser) {
+                console.dir(addedUser);
 
                 res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
                 res.write('<h2>사용자 추가 성공</h2>');
@@ -195,33 +232,98 @@ router.route('/process/adduser').post(function(req, res) {
 });
 
 
+
+//사용자 리스트 함수
+router.route('/process/listuser').post(function(req, res) {
+    console.log('/process/listuser 호출됨.');
+
+    // 데이터베이스 객체가 초기화된 경우, 모델 객체의 findAll 메소드 호출
+    if (database) {
+        // 1. 모든 사용자 검색
+        UserModel.findAll(function(err, results) {
+            // 에러 발생 시, 클라이언트로 에러 전송
+            if (err) {
+                console.error('사용자 리스트 조회 중 에러 발생 : ' + err.stack);
+
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 리스트 조회 중 에러 발생</h2>');
+                res.write('<p>' + err.stack + '</p>');
+                res.end();
+
+                return;
+            }
+
+            if (results) {  // 결과 객체 있으면 리스트 전송
+                console.dir(results);
+
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 리스트</h2>');
+                res.write('<div><ul>');
+
+                for (var i = 0; i < results.length; i++) {
+                    var curId = results[i]._doc.id;
+                    var curName = results[i]._doc.name;
+                    res.write('    <li>#' + i + ' : ' + curId + ', ' + curName + '</li>');
+                }
+
+                res.write('</ul></div>');
+                res.end();
+            } else {  // 결과 객체가 없으면 실패 응답 전송
+                res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+                res.write('<h2>사용자 리스트 조회  실패</h2>');
+                res.end();
+            }
+        });
+    } else {  // 데이터베이스 객체가 초기화되지 않은 경우 실패 응답 전송
+        res.writeHead('200', {'Content-Type':'text/html;charset=utf8'});
+        res.write('<h2>데이터베이스 연결 실패</h2>');
+        res.end();
+    }
+
+});
+
+
+
 // 라우터 객체 등록
 app.use('/', router);
 
 
-// 사용자를 인증하는 함수
+
+
+// 사용자를 인증하는 함수 : 아이디로 먼저 찾고 비밀번호를 그 다음에 비교하도록 함
 var authUser = function(database, id, password, callback) {
     console.log('authUser 호출됨 : ' + id + ', ' + password);
 
-    // 아이디와 비밀번호를 이용해 검색
-    UserModel.find({"id":id, "password":password}, function(err, results) {
-        if (err) {  // 에러 발생 시 콜백 함수를 호출하면서 에러 객체 전달
+    // 1. 아이디를 이용해 검색
+    UserModel.findById(id, function(err, results) {
+        if (err) {
             callback(err, null);
             return;
         }
 
-        console.log('아이디 [%s], 패스워드 [%s]로 사용자 검색결과', id, password);
+        console.log('아이디 [%s]로 사용자 검색결과', id);
         console.dir(results);
 
-        if (results.length > 0) {  // 조회한 레코드가 있는 경우 콜백 함수를 호출하면서 조회 결과 전달
-            console.log('아이디 [%s], 패스워드 [%s] 가 일치하는 사용자 찾음.', id, password);
-            callback(null, results);
-        } else {  // 조회한 레코드가 없는 경우 콜백 함수를 호출하면서 null, null 전달
-            console.log("일치하는 사용자를 찾지 못함.");
+        if (results.length > 0) {
+            console.log('아이디와 일치하는 사용자 찾음.');
+
+            // 2. 패스워드 확인
+            if (results[0]._doc.password === password) {
+                console.log('비밀번호 일치함');
+                callback(null, results);
+            } else {
+                console.log('비밀번호 일치하지 않음');
+                callback(null, null);
+            }
+
+        } else {
+            console.log("아이디와 일치하는 사용자를 찾지 못함.");
             callback(null, null);
         }
+
     });
-};
+
+}
 
 
 //사용자를 추가하는 함수
@@ -243,6 +345,7 @@ var addUser = function(database, id, password, name, callback) {
 
     });
 };
+
 
 // 404 에러 페이지 처리
 var errorHandler = expressErrorHandler({
