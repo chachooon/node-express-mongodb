@@ -5,7 +5,6 @@
   "main": "app_mysql.js",
   "dependencies": {
     "body-parser": "^1.18.2",
-    "connect-flash": "^0.1.1",
     "cookie-parser": "^1.4.3",
     "crypto": "^1.0.1",
     "ejs": "^2.5.7",
@@ -17,9 +16,12 @@
     "mongodb": "^2.2.33",
     "mongoose": "^4.13.2",
     "mysql": "^2.15.0",
+<<<<<<< HEAD
     "passport": "^0.4.0",
     "passport-facebook": "^2.1.1",
     "passport-local": "^1.0.0",
+=======
+>>>>>>> parent of 4822886... 패스포트로 사용자 인증하기 - 로컬 스트래티지
     "path": "^0.12.7",
     "serve-static": "^1.13.1"
   },
