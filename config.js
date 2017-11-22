@@ -10,7 +10,11 @@
         path: 클라이언트로 부터 받은 요청 패스 지정
         method: 라우팅 파일 안에 만들어 놓은 객체의 함수 이름 지정
         type: get/post 요청 방식 지정
+<<<<<<< HEAD
  */
+=======
+
+>>>>>>> parent of 5282c57... 패스포트 기능 모듈화 - 페이스북 인증 스트래티지 적용
 module.exports = {
     server_port: 3000,
     db_url: 'mongodb://localhost:27017/local',
@@ -25,4 +29,18 @@ module.exports = {
         ,{file:'./user', path:'/process/adduser', method:'adduser', type:'post'}			// user.adduser
         ,{file:'./user', path:'/process/listuser', method:'listuser', type:'post'}			// user.listuser
     ]
+<<<<<<< HEAD
+=======
+}
+ */
+
+module.exports = {
+    server_port: 3000,
+    db_url: 'mongodb://localhost:27017/local',
+    db_schemas: [
+        {file:'./user_schema', collection:'users5', schemaName:'UserSchema', modelName:'UserModel'}
+    ],
+    route_info: [
+    ]
+>>>>>>> parent of 5282c57... 패스포트 기능 모듈화 - 페이스북 인증 스트래티지 적용
 }
